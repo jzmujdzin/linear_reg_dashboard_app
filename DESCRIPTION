@@ -1,0 +1,19 @@
+Package: LinearRegressionDashboard
+Title: Interactive Dashboard for Building Linear Regression
+Version: 0.0.0.9000
+Authors@R: 
+    c(person(given = "Adam",
+           family = "Janczyszyn",
+           role = c("aut", "cre"),
+           email = "a.janczyszyn@student.uw.edu.pl"),
+  person(given = "Jakub",
+         family = "Zmujdzin",
+         role = c("aut"),
+         email = "j.zmujdzin@student.uw.edu.pl"))
+Description: The app allows users to upload a CSV file, choose various options for data preprocessing, perform exploratory data analysis, fit linear regression models, conduct model diagnostics, perform stepwise model selection, and compare different models.
+License: GPL-2
+Encoding: UTF-8
+LazyData: true
+Roxygen: list(markdown = TRUE)
+Imports: DT, corrplot, haven, tidyverse, lmtest, moments, stargazer, sandwich, knitr, car, tseries, glue, shiny
+RoxygenNote: 7.2.3
