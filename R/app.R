@@ -291,10 +291,10 @@ linearRegressionApp <- function() {
   )
 
   server <- function(input, output, session) {
-    # Define a reactiveValues variable to hold the loaded dataset
+    
     rv <- reactiveValues(df = NULL, lm = NULL, models = list(NULL, NULL, NULL, NULL, NULL), model_full = NULL, model_start = NULL, selected_model=NULL, stepwise = NULL)
 
-    # Load the dataset when a file is selected
+    # load the dataset after a file is selected
     observeEvent(input$file, {
       df <- read.csv(
         input$file$datapath,
@@ -305,14 +305,14 @@ linearRegressionApp <- function() {
       rv$df <- df
     })
 
-    # Render dataset summary table
+    
     output$data_table <- DT::renderDataTable({
       DT::datatable(rv$df,
                     options = list(pageLength = 10, scrollX = T),
                     class = "data-table-style")
     })
 
-    # Update variable selection inputs and render dataset head table when the dataset changes
+    # update variable selection inputs and render dataset head table when the dataset changes
     observeEvent(rv$df, {
       updateSelectInput(session,
                         "xcol",
@@ -328,7 +328,7 @@ linearRegressionApp <- function() {
       output$scatterplot <- renderPlot(NULL)
     })
 
-    # Render variable selection inputs
+    # render ui responsible for variable selection inputs
     output$select_vars <- renderUI({
       req(rv$df)
       fluidRow(column(
@@ -361,7 +361,7 @@ linearRegressionApp <- function() {
       ))
     })
 
-    # Render scatter plot when x and y variables are selected
+    
     output$scatter_plot <- renderPlot({
       if (!is.null(input$xcol) & !is.null(input$ycol)) {
         plot(
@@ -374,7 +374,7 @@ linearRegressionApp <- function() {
       }
     })
 
-    # Render missing data table
+    
     output$missing_table <- DT::renderDataTable({
       req(rv$df)
       if (input$missing_display == "stats") {
@@ -392,7 +392,7 @@ linearRegressionApp <- function() {
                     class = "data-table-style")
     })
 
-    # Render data type selection inputs
+    # render ui selection responsible for data type selection inputs
     output$select_types <- renderUI({
       types <- sapply(rv$df, class)
       lapply(names(types), function(name) {
@@ -420,7 +420,7 @@ linearRegressionApp <- function() {
       })
     })
 
-    # Render the test output to verify if datatypes have changed
+    
     output$dtypes_summary <- renderPrint({
       str(rv$df)
     })
@@ -448,7 +448,7 @@ linearRegressionApp <- function() {
       return(normalized_var)
     }
 
-    # Plot the variable after normalization
+    
     output$after_norm_plot <- renderPlot({
       req(input$norm_var)
       if (!is.null(input$norm_var)) {
@@ -470,7 +470,7 @@ linearRegressionApp <- function() {
       }
     })
 
-    # Apply normalization to the selected variable
+    
     observeEvent(input$apply_normalization, {
       if (!is.null(input$norm_var)) {
         normalized_var <-
@@ -484,9 +484,9 @@ linearRegressionApp <- function() {
       uniqv[which.max(tabulate(match(v, uniqv)))]
     }
 
-    # Handle missing values based on the user's selection
+    
     observeEvent(input$apply_imputation, {
-      # Drop NaNs
+     
       if (input$nan_imputation == "drop") {
         rv$df <- rv$df[complete.cases(rv$df),]
       } else {
@@ -545,7 +545,7 @@ linearRegressionApp <- function() {
       summary(rv$lm)
     })
 
-    # Create and save the model based on the formula and button click
+    # create and save the model based on the formula and button click
     observeEvent(input$save_model_button1, {
       save_model(1, "save_model_button1")
     })
@@ -566,7 +566,7 @@ linearRegressionApp <- function() {
       save_model(5, "save_model_button5")
     })
 
-    # Function to save the model to a specific model number
+    # save model to proper button
     save_model <- function(model_number, button_id) {
       if (!is.null(input$model_formula)) {
         model <- lm(input$model_formula, data = rv$df)
@@ -575,13 +575,13 @@ linearRegressionApp <- function() {
       }
     }
 
-    # Operation of the "Model Diagnostic" button
+    # model diagnostics part
     observeEvent(input$plotbutton, {
       selected_model <- as.integer(input$selected_model)
 
       model <- rv$models[[selected_model]]
 
-      # Display graphs
+      
       output$plot_1 <- renderPlot({
         if (!is.null(model))
           plot(model, which = 1)
@@ -602,7 +602,7 @@ linearRegressionApp <- function() {
           plot(model, which = 5)
       })
 
-      # Add plot interpretations
+      
       plots_interpretation <- c(
         "Plot 1 (Residuals vs. Fitted): This plot helps us assess the linearity and homoscedasticity assumptions. We want to see a random scatter of residuals around zero, indicating linearity, and an approximately constant spread of residuals, indicating homoscedasticity.",
         "Plot 2 (Normal Q-Q): This plot helps us assess the normality assumption of residuals. If the points roughly follow the diagonal reference line, it suggests that the residuals are normally distributed. Deviations from the line may indicate departures from normality.",
@@ -610,32 +610,32 @@ linearRegressionApp <- function() {
         "Plot 5 (Cook's Distance): This plot helps us identify influential observations that have a significant impact on the regression model. Points with high Cook's distances indicate potential influential observations that may have a strong influence on the estimated coefficients and overall model fit."
       )
 
-      # Display the plot interpretations
+      
       output$plot_interpretation <- renderText({
         paste(plots_interpretation, collapse = "\n\n")
       })
     })
 
 
-    # Operation of the "Variable Correlations" button
+    # variable correlations part
     observeEvent(input$corr_button, {
       selected_model <- as.integer(input$selected_model)
 
-      # Load the selected model
+      
       model <- rv$models[[selected_model]]
 
-      # Check if the model has been loaded
+      # verify that a model was loaded
       if (!is.null(model)) {
-        # Calculate variable correlations using vif()
+        
         vif_result <- car::vif(model)
 
-        # Interpretation of Variable Correlations
+        
         corr_interpretation <- "Variable correlations provide information about the multicollinearity between predictor variables. High correlation values indicate potential multicollinearity issues, which can affect the stability and interpretability of the regression model."
 
-        # Clear the corr_output
+        
         corr_output <- NULL
 
-        # Combine test results and interpretation
+        
         corr_output <- c(corr_output, "Variable Correlations:")
         corr_output <- c(corr_output, "")
         corr_output <- c(corr_output, capture.output(vif_result))
@@ -643,12 +643,12 @@ linearRegressionApp <- function() {
         corr_output <- c(corr_output, "Interpretation:")
         corr_output <- c(corr_output, corr_interpretation)
 
-        # Display the combined output
+        
         output$corr_output <- renderText({
           paste(corr_output, collapse = "\n")
         })
       } else {
-        # Display a message if the model is not loaded
+        # render error message
         output$corr_output <- renderText({
           "No model selected."
         })
@@ -659,25 +659,25 @@ linearRegressionApp <- function() {
     observeEvent(input$reset_button, {
       selected_model <- as.integer(input$selected_model)
 
-      # Load the selected model
+      
       model <- rv$models[[selected_model]]
 
-      # Check if the model has been loaded
+      # verify that model is loaded
       if (!is.null(model)) {
-        # Perform RESET test
+        
         reset_results <- lmtest::resettest(model, power = 2:3)
 
-        # Interpretation of Reset Test
+        
         reset_interpretation <- if (reset_results$p.value < 0.05) {
           "The p-value is below 0.05, indicating that there is evidence to reject the null hypothesis. This suggests that the current model may be misspecified and requires modification."
         } else {
           "The p-value is greater than 0.05, indicating that there is no significant evidence to reject the null hypothesis. This suggests that the current model does not require modification."
         }
 
-        # Clear the reset_output
+        # clear reset_output for consistency
         reset_output <- NULL
 
-        # Combine test results and interpretation
+        # combine test results and interpretation
         reset_output <- c(reset_output, "RESET Test Results:")
         reset_output <- c(reset_output, "")
         reset_output <- c(reset_output, capture.output(reset_results))
@@ -685,12 +685,12 @@ linearRegressionApp <- function() {
         reset_output <- c(reset_output, "Interpretation:")
         reset_output <- c(reset_output, reset_interpretation)
 
-        # Display the combined output
+        
         output$reset_output <- renderText({
           paste(reset_output, collapse = "\n")
         })
       } else {
-        # If the model is not loaded, display a message
+        # render error message if model is not loaded
         output$reset_output <- renderText({
           "No model selected."
         })
@@ -700,25 +700,25 @@ linearRegressionApp <- function() {
     observeEvent(input$homoscedasticity_button, {
       selected_model <- as.integer(input$selected_model)
 
-      # Load the selected model
+      
       model <- rv$models[[selected_model]]
 
-      # Check if the model has been loaded
+      
       if (!is.null(model)) {
-        # Perform the homoscedasticity test
+        
         homoscedasticity_test <- bptest(model)
 
-        # Interpretation of Homoscedasticity Test
+        
         homoscedasticity_interpretation <- if (homoscedasticity_test$p.value < 0.05) {
           "The p-value is below 0.05, indicating that there is evidence to reject the null hypothesis. This suggests that there is heteroscedasticity in the model, and the assumption of constant variance may be violated."
         } else {
           "The p-value is greater than 0.05, indicating that there is no significant evidence to reject the null hypothesis. This suggests that the model satisfies the assumption of constant variance."
         }
 
-        # Clear the homoscedasticity_output
+        
         homoscedasticity_output <- NULL
 
-        # Combine test results and interpretation
+        
         homoscedasticity_output <- c(homoscedasticity_output, "Homoscedasticity Test Results:")
         homoscedasticity_output <- c(homoscedasticity_output, "")
         homoscedasticity_output <- c(homoscedasticity_output, capture.output(homoscedasticity_test))
@@ -726,12 +726,12 @@ linearRegressionApp <- function() {
         homoscedasticity_output <- c(homoscedasticity_output, "Interpretation:")
         homoscedasticity_output <- c(homoscedasticity_output, homoscedasticity_interpretation)
 
-        # Display the combined output
+        
         output$homoscedasticity_output <- renderText({
           paste(homoscedasticity_output, collapse = "\n")
         })
       } else {
-        # Display a message if no model is selected
+        
         output$homoscedasticity_output <- renderText({
           "No model selected."
         })
@@ -741,31 +741,25 @@ linearRegressionApp <- function() {
     observeEvent(input$normality_button, {
       selected_model <- as.integer(input$selected_model)
 
-      # Load the selected model
+      
       model <- rv$models[[selected_model]]
 
-      # Check if the model has been loaded
       if (!is.null(model)) {
-        # Perform Jarque-Bera test for normality
         jb_test <- jarque.bera.test(model$residuals)
 
-        # Calculate descriptive statistics of the residuals
         residuals_mean <- round(mean(model$residuals), 2)
         residuals_sd <- round(sd(model$residuals), 2)
         residuals_skewness <- round(moments::skewness(model$residuals), 2)
         residuals_kurtosis <- round(moments::kurtosis(model$residuals), 2)
 
-        # Interpretation of Jarque-Bera Test for Normality
         normality_interpretation <- if (jb_test$p.value < 0.05) {
           "The p-value is below 0.05, suggesting that there is evidence to reject the null hypothesis. This indicates that the residuals may not follow a normal distribution."
         } else {
           "The p-value is greater than 0.05, indicating that there is no significant evidence to reject the null hypothesis. This suggests that the residuals approximately follow a normal distribution."
         }
 
-        # Clear the normality_output
         normality_output <- NULL
 
-        # Combine test results, descriptive statistics, and interpretation
         normality_output <- c(normality_output, "Jarque-Bera Test for Normality:")
         normality_output <- c(normality_output, glue("Test Statistic: {jb_test$statistic}"))
         normality_output <- c(normality_output, glue("p-value: {jb_test$p.value}"))
@@ -779,12 +773,10 @@ linearRegressionApp <- function() {
         normality_output <- c(normality_output, "Interpretation:")
         normality_output <- c(normality_output, normality_interpretation)
 
-        # Display the combined output
         output$normality_output <- renderText({
           paste(normality_output, collapse = "\n")
         })
       } else {
-        # Model not found
         output$normality_output <- renderText({
           "No model selected."
         })
@@ -794,27 +786,19 @@ linearRegressionApp <- function() {
     observeEvent(input$summary_button, {
       selected_model <- as.integer(input$selected_model)
 
-      # Load the selected model
       model <- rv$models[[selected_model]]
 
-      # Check if the model has been loaded
       if (!is.null(model)) {
-        # Generate summary of the model
         model_summary <- summary(model)
 
-        # Interpretation of the F-test
         f_test_interpretation <- "The F-test in the model summary assesses the overall significance of the regression model. It tests the null hypothesis that all the regression coefficients are zero. If the p-value associated with the F-test is below a certain significance level (e.g., 0.05), it indicates that at least one of the predictor variables is significantly related to the response variable."
 
-        # Interpretation of the R-squared statistic
         r_squared_interpretation <- "The R-squared statistic in the model summary represents the proportion of the variance in the response variable that is explained by the predictor variables. It ranges from 0 to 1, where 0 indicates no linear relationship between the predictors and the response, and 1 indicates a perfect linear relationship. A higher R-squared value suggests that the model provides a better fit to the data."
 
-        # Overall interpretation
         overall_interpretation <- "The model summary provides an overview of the regression model, including information about the significance of the predictors, the overall goodness of fit, and other relevant statistics. It is important to carefully review the model summary to evaluate the adequacy and validity of the model for the given data."
 
-        # Clear the summary_output
         summary_output <- NULL
 
-        # Combine model summary and interpretations
         summary_output <- c(summary_output, capture.output(model_summary))
         summary_output <- c(summary_output, "")
         summary_output <- c(summary_output, "Interpretation:")
@@ -826,12 +810,10 @@ linearRegressionApp <- function() {
         summary_output <- c(summary_output, "R-Squared Interpretation:")
         summary_output <- c(summary_output, r_squared_interpretation)
 
-        # Display the combined output
         output$summary_output <- renderText({
           paste(summary_output, collapse = "\n")
         })
       } else {
-        # Model not found
         output$summary_output <- renderText({
           "No model selected."
         })
@@ -839,7 +821,7 @@ linearRegressionApp <- function() {
     })
 
     observeEvent(input$selected_model, {
-      # Clear the existing outputs when a model is selected
+      # clear existing outputs after a model is selected
       output$plot_1 <- renderPlot(NULL)
       output$plot_2 <- renderPlot(NULL)
       output$plot_3 <- renderPlot(NULL)
@@ -871,10 +853,10 @@ linearRegressionApp <- function() {
 
       full_formula <- input$model_formula_full
 
-      # Fit the model using the provided formula
+      # fit the model using the provided formula
       rv$model_full <- lm(as.formula(full_formula), data = rv$df)
 
-      # Update the button label to "Model Saved"
+      # update the button label to "Model Saved"
       updateActionButton(session, "save_formula", label = "Model Full Saved")
     })
 
@@ -897,10 +879,8 @@ linearRegressionApp <- function() {
 
       start_formula <- input$model_formula_start
 
-      # Fit the model using the provided formula
       rv$model_start <- lm(as.formula(start_formula), data = rv$df)
 
-      # Update the button label to "Model Saved"
       updateActionButton(session, "save_formula_start", label = "Model Start Saved")
     })
 
@@ -912,19 +892,18 @@ linearRegressionApp <- function() {
     observeEvent(input$forward_button, {
       req(rv$model_start, rv$model_full, clean_data())
 
-      # Fit the start model on the cleaned data
       start_model <- lm(formula(rv$model_start), data = clean_data())
 
-      # Perform stepwise forward selection
+      # perform stepwise forward selection
       forward_model <- step(start_model, direction = "forward", scope = formula(rv$model_full), data = clean_data())
 
-      # Save argument stepwise
+      # save argument stepwise
       rv$stepwise = "forward"
 
-      # Update the selected model with the forward-selected model
+      # update the selected model with the forward-selected model
       rv$selected_model <- forward_model
 
-      # Display the selected model after forward selection
+      # display the selected model after forward selection
       output$selected_model_after_selection <- renderPrint({
         summary(forward_model)
       })
@@ -933,25 +912,19 @@ linearRegressionApp <- function() {
     observeEvent(input$both_button, {
       req(rv$model_start, rv$model_full, clean_data())
 
-      # Fit the start model on the cleaned data
       start_model <- lm(formula(rv$model_start), data = clean_data())
 
-      # Perform stepwise selection using both methods
       both_model <- step(start_model, direction = "both", scope = formula(rv$model_full), data = clean_data())
 
-      # Save argument stepwise
       rv$stepwise = "both"
 
-      # Update the selected model with the both-selected model
       rv$selected_model <- both_model
 
-      # Display the selected model after both selection
       output$selected_model_after_selection <- renderPrint({
         summary(both_model)
       })
     })
 
-    # Create and save the stepwise model based on the selected method and button click
     observeEvent(input$save_model_button_1, {
       save_stepwise_model(1, "save_model_button_1")
     })
@@ -972,25 +945,19 @@ linearRegressionApp <- function() {
       save_stepwise_model(5, "save_model_button_5")
     })
 
-    # Function to save the stepwise model to a specific model number
     save_stepwise_model <- function(model_number, button_id) {
       req(rv$model_start, rv$model_full, rv$stepwise, clean_data())
 
-      # Fit the start model on clean data
       fit_start <- lm(formula(rv$model_start), data = clean_data())
 
-      # Fit the full model on clean data
       fit_full <- lm(formula(rv$model_full), data = clean_data())
 
-      # Check the stepwise type
+      # check the stepwise type
       if (rv$stepwise == "forward") {
-        # Perform forward stepwise selection on the start model using the full model as the scope
         stepwise_model <- step(fit_start, direction = "forward", scope = formula(fit_full))
       } else if (rv$stepwise == "both") {
-        # Perform both stepwise selection on the start model using the full model as the scope
         stepwise_model <- step(fit_start, direction = "both", scope = formula(fit_full))
       } else {
-        # Invalid stepwise type
         return()
       }
 
@@ -1002,7 +969,7 @@ linearRegressionApp <- function() {
       updateActionButton(session, button_id, label = paste("Model", model_number, "- Saved"))
     }
 
-    # Generate the checkboxes
+    # generate the checkboxes for model comparison
     output$checkboxes <- renderUI({
       models_avail <- rv$models[!sapply(rv$models, is.null)]
       checkboxGroupInput(
@@ -1013,21 +980,17 @@ linearRegressionApp <- function() {
       )
     })
 
-    # Model Comparison
     output$modelComparison <- renderText({
-      # If there are no models selected, return an informative message
+      # if there are no models selected, return error message
       if(is.null(input$checkbox) || length(input$checkbox) == 0) {
         return("No models selected for comparison.")
       }
 
-      # Get the selected models
       selected_models <- input$checkbox
 
-      # Retrieve the corresponding models
       models <- lapply(selected_models, function(model) {
         model_number <- as.integer(sub("Model ", "", model))
 
-        # Check if the model_number is within bounds
         if(model_number <= length(rv$models) && !is.null(rv$models[[model_number]])) {
           rv$models[[model_number]]
         } else {
@@ -1035,21 +998,17 @@ linearRegressionApp <- function() {
         }
       })
 
-      # Remove any NULL models from the list
       models <- models[!sapply(models, is.null)]
 
-      # If there are no valid models after filtering, return an informative message
       if(length(models) == 0) {
         return("No valid models selected for comparison.")
       }
 
-      # Compare the models using stargazer
+      # compare the models using stargazer
       comparison_results <- capture.output(stargazer::stargazer(models, type = "text", df = FALSE, align = TRUE, star.cutoffs = c(0.05, 0.01, 0.001)))
 
-      # Join the comparison results as a single string
       comparison_results <- paste(comparison_results, collapse = "\n")
 
-      # Return the comparison results
       comparison_results
     })
 
